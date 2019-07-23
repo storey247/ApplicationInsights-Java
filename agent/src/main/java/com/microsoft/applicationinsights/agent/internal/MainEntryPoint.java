@@ -98,6 +98,7 @@ public class MainEntryPoint {
 
         EngineModule.createWithSomeDefaults(instrumentation, tmpDir, Global.getThreadContextThreadLocal(),
                 instrumentationDescriptors, configServiceFactory, new AgentImpl(),
+                Collections.singletonList("com.microsoft.applicationinsights.agent"),
                 Collections.singletonList("com.microsoft.applicationinsights.agent"), agentJarFile);
     }
 }
