@@ -1,0 +1,8 @@
+{
+  "name": "Azure Functions",
+  "id": "azure-functions",
+  "classes": [
+    "com.microsoft.applicationinsights.instrumentation.azurefunctions.AzureFunctionsInstrumentation"
+  ],
+  "collocate": true
+}
