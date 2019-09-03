@@ -50,8 +50,7 @@ public class TraceContextCorrelation {
      * @param response
      * @param requestTelemetry
      */
-    public static void resolveCorrelation(HttpServletRequest request, HttpServletResponse response,
-        RequestTelemetry requestTelemetry) {
+    public static void resolveCorrelation(HttpServletRequest request, HttpServletResponse response, RequestTelemetry requestTelemetry) {
 
         try {
             if (request == null) {
@@ -81,8 +80,7 @@ public class TraceContextCorrelation {
 
             // assign parent id
             if (incomingTraceparent != null) {
-                requestTelemetry.getContext().getOperation().setParentId("|" + processedTraceParent.getTraceId() + "." +
-                    incomingTraceparent.getSpanId() + ".");
+                requestTelemetry.getContext().getOperation().setParentId("|" + processedTraceParent.getTraceId() + "." + incomingTraceparent.getSpanId() + ".");
             } else {
                 // set parentId only if not already set (legacy processing can set it)
                 if (requestTelemetry.getContext().getOperation().getParentId() == null) {
@@ -105,8 +103,7 @@ public class TraceContextCorrelation {
             addTargetAppIdInResponseHeaderViaRequestContext(response);
 
         } catch (java.lang.Exception e) {
-            InternalLogger.INSTANCE.error("unable to perform correlation :%s", ExceptionUtils.
-                getStackTrace(e));
+            InternalLogger.INSTANCE.error("unable to perform correlation :%s", ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -129,8 +126,7 @@ public class TraceContextCorrelation {
         try {
             incomingTraceparent = Traceparent.fromString(traceparentList.get(0));
         } catch (Exception e) {
-            InternalLogger.INSTANCE.error(String.format("Received invalid traceparent header with exception %s, "
-                + "distributed trace might be broken", ExceptionUtils.getStackTrace(e)));
+            InternalLogger.INSTANCE.error(String.format("Received invalid traceparent header with exception %s, distributed trace might be broken", ExceptionUtils.getStackTrace(e)));
         }
         return incomingTraceparent;
     }
@@ -140,8 +136,7 @@ public class TraceContextCorrelation {
      * @param incomingTraceparent
      * @return
      */
-    private static Traceparent processIncomingTraceparent(Traceparent incomingTraceparent,
-        HttpServletRequest request) {
+    private static Traceparent processIncomingTraceparent(Traceparent incomingTraceparent, HttpServletRequest request) {
 
         Traceparent processedTraceparent = null;
 
@@ -159,8 +154,7 @@ public class TraceContextCorrelation {
 
         } else {
             // create outbound traceparent inheriting traceId, flags from parent.
-            processedTraceparent = new Traceparent(0, incomingTraceparent.getTraceId(), null,
-                incomingTraceparent.getTraceFlags());
+            processedTraceparent = new Traceparent(0, incomingTraceparent.getTraceId(), null, incomingTraceparent.getTraceFlags());
         }
         return processedTraceparent;
     }
@@ -210,21 +204,18 @@ public class TraceContextCorrelation {
                 tracestate = Tracestate.fromString(StringUtils.join(tracestateList, ","));
                 // add appId to it if it's resolved
                 if (appId != null && !appId.isEmpty()) {
-                    tracestate = new Tracestate(tracestate, AZURE_TRACEPARENT_COMPONENT_INITIAL,
-                        appId);
+                    tracestate = new Tracestate(tracestate, AZURE_TRACEPARENT_COMPONENT_INITIAL, appId);
                 }
 
             } catch (Exception e) {
-                InternalLogger.INSTANCE.error(String.format("Cannot parse incoming tracestate %s",
-                    ExceptionUtils.getStackTrace(e)));
+                InternalLogger.INSTANCE.error(String.format("Cannot parse incoming tracestate %s", ExceptionUtils.getStackTrace(e)));
                 try {
                     // Pass new tracestate if received invalid tracestate
                     if (appId != null && !appId.isEmpty()) {
                         tracestate = new Tracestate(null, AZURE_TRACEPARENT_COMPONENT_INITIAL, appId);
                     }
                 } catch (Exception ex) {
-                    InternalLogger.INSTANCE.error(String.format("Cannot create default tracestate %s",
-                        ExceptionUtils.getStackTrace(ex)));
+                    InternalLogger.INSTANCE.error(String.format("Cannot create default tracestate %s", ExceptionUtils.getStackTrace(ex)));
                 }
             }
         } else {
@@ -234,8 +225,7 @@ public class TraceContextCorrelation {
                     tracestate = new Tracestate(null, AZURE_TRACEPARENT_COMPONENT_INITIAL, appId);
                 }
             } catch (Exception e) {
-                InternalLogger.INSTANCE.error(String.format("cannot create default traceparent %s",
-                    ExceptionUtils.getStackTrace(e)));
+                InternalLogger.INSTANCE.error(String.format("cannot create default traceparent %s", ExceptionUtils.getStackTrace(e)));
             }
         }
         return tracestate;
@@ -281,7 +271,7 @@ public class TraceContextCorrelation {
     public static String getAppId() {
 
         String instrumentationKey = TelemetryConfiguration.getActive().getInstrumentationKey();
-        String appId = InstrumentationKeyResolver.INSTANCE.resolveInstrumentationKey(instrumentationKey);
+        String appId = InstrumentationKeyResolver.INSTANCE.resolveInstrumentationKey(instrumentationKey, TelemetryConfiguration.getActive());
 
         //it's possible the appId returned is null (e.g. async task is still pending or has failed). In this case, just
         //return and let the next request resolve the ikey.
@@ -327,31 +317,25 @@ public class TraceContextCorrelation {
             String tracestate = request.getHeader(TRACESTATE_HEADER_NAME);
             if (tracestate == null || tracestate.isEmpty()) {
 
-                if (isW3CBackCompatEnabled &&
-                        request.getHeader(TelemetryCorrelationUtils.REQUEST_CONTEXT_HEADER_NAME) != null) {
-                    InternalLogger.INSTANCE.trace("Tracestate absent, In backward compatibility mode, will try to resolve "
-                        + "request-context");
+                if (isW3CBackCompatEnabled && request.getHeader(TelemetryCorrelationUtils.REQUEST_CONTEXT_HEADER_NAME) != null) {
+                    InternalLogger.INSTANCE.trace("Tracestate absent, In backward compatibility mode, will try to resolve request-context");
                     TelemetryCorrelationUtils.resolveRequestSource(request, requestTelemetry, instrumentationKey);
                     return;
                 }
-                InternalLogger.INSTANCE.info("Skip resolving request source as the following header was not found: %s",
-                    TRACESTATE_HEADER_NAME);
+                InternalLogger.INSTANCE.info("Skip resolving request source as the following header was not found: %s", TRACESTATE_HEADER_NAME);
                 return;
             }
 
             Tracestate incomingTracestate = Tracestate.fromString(tracestate);
 
-            String source = generateSourceTargetCorrelation(instrumentationKey,
-                incomingTracestate.get(AZURE_TRACEPARENT_COMPONENT_INITIAL));
+            String source = generateSourceTargetCorrelation(instrumentationKey, incomingTracestate.get(AZURE_TRACEPARENT_COMPONENT_INITIAL));
 
             // Set the source of this request telemetry which would be equal to AppId of the caller if
             // it's different from current AppId or else null.
             requestTelemetry.setSource(source);
 
-        }
-        catch(Exception ex) {
-            InternalLogger.INSTANCE.error("Failed to resolve request source. Exception information: %s",
-                ExceptionUtils.getStackTrace(ex));
+        } catch (Exception ex) {
+            InternalLogger.INSTANCE.error("Failed to resolve request source. Exception information: %s", ExceptionUtils.getStackTrace(ex));
         }
     }
 
@@ -375,15 +359,13 @@ public class TraceContextCorrelation {
 
         // In W3C we only pass requestContext for the response. So it's expected to have only single key-value pair
         String[] keyValue = requestContext.split("=");
-        assert keyValue.length == 2;
 
         String headerAppID = null;
         if (keyValue[0].equals(REQUEST_CONTEXT_HEADER_APPID_KEY)) {
             headerAppID = keyValue[1];
         }
 
-        String currAppId = InstrumentationKeyResolver.INSTANCE.resolveInstrumentationKey(TelemetryConfiguration.getActive()
-        .getInstrumentationKey());
+        String currAppId = InstrumentationKeyResolver.INSTANCE.resolveInstrumentationKey(instrumentationKey, TelemetryConfiguration.getActive());
 
         String target = resolve(headerAppID, currAppId);
         if (target == null) {
@@ -398,11 +380,14 @@ public class TraceContextCorrelation {
      * generates the appropriate source or target.
      */
     private static String generateSourceTargetCorrelation(String instrumentationKey, String appId) {
+        if (StringUtils.isEmpty(instrumentationKey)) {
+            throw new IllegalArgumentException("instrumentationKey should be nonnull");
+        }
+        if (StringUtils.isEmpty(appId)) {
+            throw new IllegalArgumentException("appId should be nonnull");
+        }
 
-        assert instrumentationKey != null;
-        assert appId != null;
-
-        String myAppId = InstrumentationKeyResolver.INSTANCE.resolveInstrumentationKey(instrumentationKey);
+        String myAppId = InstrumentationKeyResolver.INSTANCE.resolveInstrumentationKey(instrumentationKey, TelemetryConfiguration.getActive());
 
         return resolve(appId, myAppId);
     }
@@ -485,10 +470,14 @@ public class TraceContextCorrelation {
      * @return legacy format traceparent
      */
     public static String createChildIdFromTraceparentString(String traceparent) {
-        assert traceparent != null;
+        if (traceparent == null) {
+            throw new NullPointerException("traceparent cannot be null");
+        }
 
         String[] traceparentArr = traceparent.split("-");
-        assert traceparentArr.length == 4;
+        if (traceparentArr.length != 4) {
+            throw new IllegalArgumentException("Invalid traceparent");
+        }
 
         return "|" + traceparentArr[1] + "." + traceparentArr[2] + ".";
     }
