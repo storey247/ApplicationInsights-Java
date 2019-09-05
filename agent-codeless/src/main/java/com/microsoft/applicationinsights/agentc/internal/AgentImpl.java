@@ -23,6 +23,7 @@ package com.microsoft.applicationinsights.agentc.internal;
 
 import java.util.Date;
 
+import com.google.common.base.Strings;
 import com.microsoft.applicationinsights.agentc.internal.model.DistributedTraceContext;
 import com.microsoft.applicationinsights.agentc.internal.model.Global;
 import com.microsoft.applicationinsights.agentc.internal.model.IncomingSpanImpl;
@@ -77,7 +78,9 @@ class AgentImpl implements AgentSPI {
                     TelemetryCorrelationUtilsCore.resolveCorrelationForRequest(carrier, getter, requestTelemetry);
             TelemetryCorrelationUtilsCore.resolveRequestSource(carrier, getter, requestTelemetry, instrumentationKey);
         }
-        requestTelemetry.getContext().getOperation().setParentId(requestTelemetry.getId());
+        if (requestTelemetry.getContext().getOperation().getParentId() == null) {
+            requestTelemetry.getContext().getOperation().setParentId(requestTelemetry.getId());
+        }
 
         IncomingSpanImpl incomingSpan = new IncomingSpanImpl(messageSupplier, threadContextHolder, startTimeMillis,
                 requestTelemetry, distributedTraceContext);
