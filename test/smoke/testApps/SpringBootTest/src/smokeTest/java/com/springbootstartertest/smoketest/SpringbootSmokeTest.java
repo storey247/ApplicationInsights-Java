@@ -19,7 +19,6 @@ import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -31,9 +30,9 @@ public class SpringbootSmokeTest extends AiSmokeTest {
 
     @Test
     @TargetUri("/basic/trackEvent")
-    public void trackEvent() {
-        assertEquals(1, mockedIngestion.getCountForType("RequestData"));
-        assertEquals(2, mockedIngestion.getCountForType("EventData"));
+    public void trackEvent() throws Exception {
+        mockedIngestion.waitForItems("RequestData", 1);
+        mockedIngestion.waitForItems("EventData", 2);
 
         // TODO get event data envelope and verify value
         final List<EventData> data = mockedIngestion.getTelemetryDataByType("EventData");
@@ -77,12 +76,9 @@ public class SpringbootSmokeTest extends AiSmokeTest {
 
     @Test
     @TargetUri("/throwsException")
-    public void testResultCodeWhenRestControllerThrows() {
-        List<Envelope> rdList = mockedIngestion.getItemsEnvelopeDataType("RequestData");
-        List<Envelope> edList = mockedIngestion.getItemsEnvelopeDataType("ExceptionData");
-
-        assertThat(rdList, hasSize(1));
-        assertThat(edList, hasSize(1));
+    public void testResultCodeWhenRestControllerThrows() throws Exception {
+        List<Envelope> rdList = mockedIngestion.waitForItems("RequestData", 1);
+        List<Envelope> edList = mockedIngestion.waitForItems("ExceptionData", 1);
 
         Envelope rdEnvelope = rdList.get(0);
         Envelope edEnvelope = edList.get(0);
@@ -102,16 +98,13 @@ public class SpringbootSmokeTest extends AiSmokeTest {
 
     @Test
     @TargetUri("/asyncDependencyCall")
-    public void testAsyncDependencyCall() {
+    public void testAsyncDependencyCall() throws Exception {
         commonValidation();
     }
 
-    private static void commonValidation() {
-        List<Envelope> rdList = mockedIngestion.getItemsEnvelopeDataType("RequestData");
-        List<Envelope> rddList = mockedIngestion.getItemsEnvelopeDataType("RemoteDependencyData");
-
-        assertThat(rdList, hasSize(1));
-        assertThat(rddList, hasSize(1));
+    private static void commonValidation() throws Exception {
+        List<Envelope> rdList = mockedIngestion.waitForItems("RequestData", 1);
+        List<Envelope> rddList = mockedIngestion.waitForItems("RemoteDependencyData", 1);
 
         Envelope rdEnvelope = rdList.get(0);
         Envelope rddEnvelope = rddList.get(0);
